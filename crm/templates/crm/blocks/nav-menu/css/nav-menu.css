@@ -1,0 +1,26 @@
+.nav-menu-wrapper .navbar {
+    padding-top: 15px;
+    /*position: absolute;*/
+    /*left: 50%;*/
+    /*margin-right: -50%;*/
+    /*transform: translate(-50%, -50%);*/
+}
+
+.nav-menu-wrapper .navbar-nav {
+    text-transform: uppercase;
+    font-family: 'Roboto Condensed', sans-serif;
+    font-size: 14px;
+}
+
+.nav-menu-wrapper .navbar-nav > li + li {
+    border-left:1px solid #788694;
+}
+
+.nav-menu-wrapper .navbar-nav > li > a {
+    color: #000000;
+}
+
+.nav-menu-wrapper .navbar-nav > li > a:hover {
+    background: #788694;
+    color: #ffffff;
+}

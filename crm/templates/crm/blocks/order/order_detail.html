@@ -1,0 +1,86 @@
+{% extends 'crm/base/base.html' %}
+{% load staticfiles %}
+
+
+{% block main-center %}
+
+    <div class="row">
+        <div class="col-lg-offset-3 col-lg-6">
+            <h3>{{ extra_title }}</h3>
+        </div>
+    </div>
+    <br>
+    <br>
+    <div class="row">
+        <div class="col-lg-12">
+            <form action="" method="post">
+                {% for field in form %}
+                <div class="row">
+                    <div class="col-lg-3">
+                        {{ field.errors }}
+                    </div>
+                    <div class="col-lg-3">
+                        {{ field.label_tag }}
+                    </div>
+                    <div class="col-lg-3">
+                        {{ field }}
+                    </div>
+                    <div class="col-lg-3">
+                        {% if field.help_text %}
+                        <p class="help">{{ field.help_text|safe }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <br>
+                {% endfor %}
+            </form>
+            <br>
+            <div class="row">
+                <div class="col-lg-offset-10 col-lg-2">
+                    <a href={% url 'employee_create' object.pk %} >
+                        <button type="button" >Добавить сотрудника</button>
+                    </a>
+                </div>
+            </div>
+            <br>
+            <br>
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="col-lg-offset-1 col-lg-11">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Фамилия</th>
+                                    <th>Имя</th>
+                                    <th>Отчество</th>
+                                    <th>Должность</th>
+                                    <th>Телефон</th>
+                                    <th>Эл. почта</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for empl in org_employee_list %}
+                                <tr class="" >
+                                    <td>{{ empl.first_name }}</td>
+                                    <td>{{ empl.middle_name }}</td>
+                                    <td>{{ empl.last_name }}</td>
+                                    <td>{{ empl.role }}</td>
+                                    <td>{{ empl.phone }}</td>
+                                    <td>{{ empl.email }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock main-center %}
+
+{% block main-center-storage %}
+
+
+
+{% endblock main-center-storage %}
+
