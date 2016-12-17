@@ -1,7 +1,6 @@
 /.idea/*
-/venv/*
+/venv3/*
 .git/
 *.py[co]
 __pycache__/
 migrations/
-tmp.html
