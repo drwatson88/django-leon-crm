@@ -41,7 +41,7 @@ from .crud_views import UnitMasterCreateView, UnitMasterParamsValidationMixin
 
 
 unit_extra = {
-    'title': {
+    'header': {
         'create': 'Добавление',
         'update': 'Просмотр/Редактирование',
         'delete': 'Удаление'
@@ -83,7 +83,7 @@ class BaseViewFactory(View):
     validators = None
     template_name = None
 
-    unix_extra = unit_extra
+    unit_extra = unit_extra
     develop_extra = None
 
     @classonlymethod
@@ -138,6 +138,8 @@ class BaseViewFactory(View):
                 'template_name': cls.template_name,
                 'success_url': cls.success_url,
                 'model': cls.model,
+                'unit_extra': cls.unit_extra,
+                'develop_extra': cls.develop_extra,
                 # 'fields': cls.fields,
                 # 'title': cls.title,
                 'action': action,
