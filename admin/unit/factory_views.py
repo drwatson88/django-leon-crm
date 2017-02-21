@@ -7,46 +7,8 @@ from django.utils.decorators import classonlymethod
 from django.views.generic import View
 
 from .crud_views import UnitMasterCreateView, UnitMasterParamsValidationMixin
-
-
-# button_map = {
-#     'create': [
-#         {
-#             'title': 'Назад',
-#             'type': 'link',
-#             'disabled': False
-#         },
-#         {
-#             'title': 'Сохранить',
-#             'type': 'submit',
-#             'disabled': True
-#         }
-#     ],
-#     'update': [
-#         {
-#             'title': 'Назад',
-#             'type': 'link',
-#             'disabled': False
-#         },
-#         {
-#             'title': 'Сохранить',
-#             'type': 'submit',
-#             'disabled': True
-#         }
-#     ],
-#     'delete': {
-#
-#     }
-# }
-
-
-unit_extra = {
-    'header': {
-        'create': 'Добавление',
-        'update': 'Просмотр/Редактирование',
-        'delete': 'Удаление'
-    }
-}
+from .crud_format import UnitMasterFormatMixin
+from .forms import MasterCreateFormMixin
 
 
 class BaseViewFactory(View):
@@ -61,14 +23,16 @@ class BaseViewFactory(View):
     detail_view_class = None
     delete_view_class = None
 
-    create_mixin = [UnitMasterParamsValidationMixin]
+    create_mixin = [UnitMasterFormatMixin, UnitMasterParamsValidationMixin]
     update_mixin = []
     detail_mixin = []
     delete_mixin = []
 
     view_internal_mixin = []
-    master_form_internal_mixin = []
-    slave_form_internal_mixin = []
+    create_master_form_internal_mixin = [MasterCreateFormMixin]
+    create_slave_form_internal_mixin = []
+
+    create_redirect_url = None
 
     action = None
     model = None
@@ -83,8 +47,13 @@ class BaseViewFactory(View):
     validators = None
     template_name = None
 
-    unit_extra = unit_extra
-    develop_extra = None
+    create_develop_extra = None
+    update_develop_extra = None
+    delete_develop_extra = None
+
+    create_unit_extra = None
+    update_unit_extra = None
+    delete_unit_extra = None
 
     @classonlymethod
     def as_view(cls, load_action, **initkwargs):
@@ -105,17 +74,17 @@ class BaseViewFactory(View):
                                 "attributes of the class." % (cls.__name__, key))
 
         def master_form_create(action):
-            form_internal_mixin = getattr(cls, 'master_form_internal_mixin')
+            form_internal_mixin = getattr(cls, '{}_master_form_internal_mixin'.format(action))
             form_siblings = []
             form_siblings.extend(form_internal_mixin)
             form_siblings.extend([cls.master_form_class])
             form_namespace = {
-                # 'base_buttons': cls.button_map[action],
+                'develop_extra': cls.create_develop_extra,
             }
             return type('MasterFormClass', tuple(form_siblings), form_namespace)
 
         def slave_form_s_create(action):
-            slave_form_internal_mixin = getattr(cls, 'slave_form_internal_mixin')
+            slave_form_internal_mixin = getattr(cls, '{}_slave_form_internal_mixin'.format(action))
 
             slave_form_s = []
             for form_class in cls.slave_form_class_s:
@@ -138,8 +107,9 @@ class BaseViewFactory(View):
                 'template_name': cls.template_name,
                 'success_url': cls.success_url,
                 'model': cls.model,
-                'unit_extra': cls.unit_extra,
-                'develop_extra': cls.develop_extra,
+                'develop_extra': getattr(cls, '{}_develop_extra'.format(action)),
+                'unit_extra': getattr(cls, '{}_unit_extra'.format(action)),
+                'redirect_url': getattr(cls, '{}_redirect_url'.format(action)),
                 # 'fields': cls.fields,
                 # 'title': cls.title,
                 'action': action,
