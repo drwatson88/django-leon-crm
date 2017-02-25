@@ -108,7 +108,6 @@ class UnitMasterCreateView(BaseView):
     def _render_content(self):
         response = self._render()
         html = response.content
-        # base64.encode(response.content, html)
         return HttpResponse(json.dumps({'url': None,
                                         'html': html.decode('utf-8')}))
 

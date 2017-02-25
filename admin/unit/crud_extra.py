@@ -1,30 +1,6 @@
 # coding: utf-8
 
 
-# create_unit_extra = {
-#     'header': {
-#         'create': 'Добавление',
-#         'update': 'Просмотр/Редактирование',
-#         'delete': 'Удаление'
-#     },
-#     'master': {
-#         'main_buttons': [
-#             {
-#                 'key': 'back',
-#                 'href': '#',
-#                 'title': 'Назад'
-#             },
-#             {
-#                 'key': 'save',
-#                 'href': '#',
-#                 'title': 'Сохранить'
-#             }
-#         ],
-#         'slave_buttons': {}
-#     }
-# }
-
-
 create_unit_extra = {
     'master': {
         'header': 'Добавление',
