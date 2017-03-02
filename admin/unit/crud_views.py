@@ -4,10 +4,12 @@
 import json
 import base64
 import pymorphy2
+import itertools
 from django.shortcuts import HttpResponseRedirect, HttpResponse
 
 from leon.base import BaseView, BaseParamsValidatorMixin
 from .crud_extra import create_unit_extra
+from .format_widgets import FormFormatWidget
 
 
 class UnitMasterParamsValidationMixin(BaseParamsValidatorMixin):
@@ -52,6 +54,8 @@ class UnitMasterCreateView(BaseView):
     develop_extra = None
     unit_extra = None
 
+    FORM_FORMAT_WIDGET = FormFormatWidget
+
     def __init__(self, **kwargs):
         """
 
@@ -64,6 +68,23 @@ class UnitMasterCreateView(BaseView):
             'unit_meta': None
         }
         super(UnitMasterCreateView, self).__init__(**kwargs)
+        self.extra = {}
+
+    @staticmethod
+    def _get_obj_meta(obj):
+        """
+        Return Django obj private _meta field
+        :type obj: object
+        """
+        return obj._meta
+
+    @staticmethod
+    def _get_obj_name(obj):
+        """
+        Return Django obj private __name
+        :type obj: object
+        """
+        return obj.__name__
 
     def _model_form_header(self, form, status):
         """
@@ -76,7 +97,7 @@ class UnitMasterCreateView(BaseView):
         model = self._get_obj_meta(form).model
         morph_obj = morph.parse(self._get_obj_meta(model).
                                 verbose_name.lower())[0]
-        return '{} {}'.format(self.unit_extra[status]['header'],
+        return '{} {}'.format(self.unit_extra[status]['header_pfx'],
                               morph_obj.inflect({'gent'}).word)
 
     def _create_master_form(self, get=True):
@@ -102,6 +123,31 @@ class UnitMasterCreateView(BaseView):
     def _create_breadcrumb(self):
         pass
 
+    def _format_master_form(self):
+        self.unit_master_form = self.FORM_FORMAT_WIDGET().format(self.master_form['form'],
+                                                                 self.master_form['header'],
+                                                                 'master_form',
+                                                                 self.extra['master_form']['groups'],
+                                                                 self.extra['master_form']['buttons'],
+                                                                 self.extra['subtype'],
+                                                                 None)
+
+    def _format_slave_form_s(self):
+        self.unit_slave_form_s = []
+        for slave_obj, slave_extra in itertools.zip_longest(self.slave_form_s,
+                                                            self.extra['slave_form_s']):
+            form = self.FORM_FORMAT_WIDGET().format(slave_obj['form'],
+                                                    slave_obj['header'],
+                                                    '{}_form'.format(slave_extra['field']),
+                                                    slave_extra['groups'],
+                                                    slave_extra['buttons'],
+                                                    self.extra['subtype'],
+                                                    None)
+            self.unit_slave_form_s.append(form)
+
+    def _format_breadcrumb(self):
+        pass
+
     def _redirect(self):
         return HttpResponse(json.dumps({'url': self.redirect_url}))
 
@@ -121,6 +167,8 @@ class UnitMasterCreateView(BaseView):
         self._create_master_form()
         self._create_slave_form_s()
         self._create_meta()
+
+        self._convert_extra()
 
         self._format_master_form()
         self._format_slave_form_s()

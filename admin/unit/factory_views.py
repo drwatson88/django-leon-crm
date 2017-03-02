@@ -7,7 +7,7 @@ from django.utils.decorators import classonlymethod
 from django.views.generic import View
 
 from .crud_views import UnitMasterCreateView, UnitMasterParamsValidationMixin
-from .crud_format import UnitMasterFormatMixin
+from .crud_extra import CrudExtraConverter
 from .forms import MasterCreateFormMixin
 
 
@@ -23,7 +23,7 @@ class BaseViewFactory(View):
     detail_view_class = None
     delete_view_class = None
 
-    create_mixin = [UnitMasterFormatMixin, UnitMasterParamsValidationMixin]
+    create_mixin = [CrudExtraConverter, UnitMasterParamsValidationMixin]
     update_mixin = []
     detail_mixin = []
     delete_mixin = []
