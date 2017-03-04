@@ -2,14 +2,11 @@
 
 
 import json
-import base64
 import pymorphy2
 import itertools
 from django.shortcuts import HttpResponseRedirect, HttpResponse
 
 from leon.base import BaseView, BaseParamsValidatorMixin
-from .crud_extra import create_unit_extra
-from .format_widgets import FormFormatWidget
 
 
 class UnitMasterParamsValidationMixin(BaseParamsValidatorMixin):
@@ -51,10 +48,7 @@ class UnitMasterCreateView(BaseView):
     master_form_class = None
     slave_form_class_s = None
     redirect_url = None
-    develop_extra = None
-    unit_extra = None
-
-    FORM_FORMAT_WIDGET = FormFormatWidget
+    meta = None
 
     def __init__(self, **kwargs):
         """
@@ -70,82 +64,18 @@ class UnitMasterCreateView(BaseView):
         super(UnitMasterCreateView, self).__init__(**kwargs)
         self.extra = {}
 
-    @staticmethod
-    def _get_obj_meta(obj):
-        """
-        Return Django obj private _meta field
-        :type obj: object
-        """
-        return obj._meta
-
-    @staticmethod
-    def _get_obj_name(obj):
-        """
-        Return Django obj private __name
-        :type obj: object
-        """
-        return obj.__name__
-
-    def _model_form_header(self, form, status):
-        """
-        Create form header (using model form)
-        :param form:
-        :param action:
-        :return:
-        """
-        morph = pymorphy2.MorphAnalyzer()
-        model = self._get_obj_meta(form).model
-        morph_obj = morph.parse(self._get_obj_meta(model).
-                                verbose_name.lower())[0]
-        return '{} {}'.format(self.unit_extra[status]['header_pfx'],
-                              morph_obj.inflect({'gent'}).word)
-
     def _create_master_form(self, get=True):
-        form = self.master_form_class() if get \
+        self.unit_master_form = self.master_form_class() if get \
             else self.master_form_class(json.loads(self.params_storage['data']))
-        self.master_form = {
-            'form': form,
-            'header': self._model_form_header(form, 'master')
-        }
 
     def _create_slave_form_s(self):
-        self.slave_form_s = []
-        for slave_form_class in self.slave_form_class_s:
-            slave_form = slave_form_class()
-            self.slave_form_s.append({
-                'form': slave_form,
-                'header': self._model_form_header(slave_form, 'slave')
-            })
+        self.unit_slave_form_s = [slave_form_class()
+                                  for slave_form_class in self.slave_form_class_s]
 
     def _create_meta(self):
-        self.unit_meta = json.dumps(self.develop_extra['meta'])
+        self.unit_meta = json.dumps(self.meta)
 
     def _create_breadcrumb(self):
-        pass
-
-    def _format_master_form(self):
-        self.unit_master_form = self.FORM_FORMAT_WIDGET().format(self.master_form['form'],
-                                                                 self.master_form['header'],
-                                                                 'master_form',
-                                                                 self.extra['master_form']['groups'],
-                                                                 self.extra['master_form']['buttons'],
-                                                                 self.extra['subtype'],
-                                                                 None)
-
-    def _format_slave_form_s(self):
-        self.unit_slave_form_s = []
-        for slave_obj, slave_extra in itertools.zip_longest(self.slave_form_s,
-                                                            self.extra['slave_form_s']):
-            form = self.FORM_FORMAT_WIDGET().format(slave_obj['form'],
-                                                    slave_obj['header'],
-                                                    '{}_form'.format(slave_extra['field']),
-                                                    slave_extra['groups'],
-                                                    slave_extra['buttons'],
-                                                    self.extra['subtype'],
-                                                    None)
-            self.unit_slave_form_s.append(form)
-
-    def _format_breadcrumb(self):
         pass
 
     def _redirect(self):
@@ -158,8 +88,8 @@ class UnitMasterCreateView(BaseView):
                                         'html': html.decode('utf-8')}))
 
     def _validate_master_form(self):
-        if self.master_form['form'].is_valid():
-            self.master_form['form'].save()
+        if self.unit_master_form.is_valid():
+            self.unit_master_form.save()
             return True
 
     def get(self, *args, **kwargs):
@@ -167,13 +97,6 @@ class UnitMasterCreateView(BaseView):
         self._create_master_form()
         self._create_slave_form_s()
         self._create_meta()
-
-        self._convert_extra()
-
-        self._format_master_form()
-        self._format_slave_form_s()
-        # self._format_meta()
-        self._format_breadcrumb()
 
         self._aggregate()
         return self._render()
@@ -183,14 +106,7 @@ class UnitMasterCreateView(BaseView):
         self._create_master_form(get=False)
         if self._validate_master_form():
             return self._redirect()
-        self.master_form['form'].save()
         self._create_slave_form_s()
         self._create_meta()
-        #
-        self._format_master_form()
-        self._format_slave_form_s()
-        # self._format_meta()
-        self._format_breadcrumb()
-
         self._aggregate()
         return self._render_content()

@@ -4,7 +4,6 @@
 import json
 import itertools
 from .list_extra import ListExtraConverter, list_unit_extra
-from .format_widgets import FilterFormatWidget
 
 from django.db.models import Q
 from django.core.paginator import Paginator
@@ -67,7 +66,6 @@ class UnitListView(BaseView, ListExtraConverter, UnitListParamsValidationMixin):
     list_unit_extra = list_unit_extra
 
     PAGE_STEP = None
-    FILTER_FORMAT_WIDGET = FilterFormatWidget
 
     def __init__(self, **kwargs):
         """
@@ -77,7 +75,7 @@ class UnitListView(BaseView, ListExtraConverter, UnitListParamsValidationMixin):
         self.output_context = {
             'filter': None,
             'table': None,
-            'pages': None
+            'page_s': None
         }
         super(UnitListView, self).__init__(**kwargs)
         self.table = {}
@@ -172,7 +170,7 @@ class UnitListView(BaseView, ListExtraConverter, UnitListParamsValidationMixin):
         self._convert_extra()
 
         self._format_filter()
-        # self._format_page_list()
+        self._format_page_list()
         self._format_qs_list_header()
         self._format_qs_list()
         self._aggregate()

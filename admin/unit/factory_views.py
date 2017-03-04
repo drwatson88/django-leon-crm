@@ -7,8 +7,8 @@ from django.utils.decorators import classonlymethod
 from django.views.generic import View
 
 from .crud_views import UnitMasterCreateView, UnitMasterParamsValidationMixin
-from .crud_extra import CrudExtraConverter
-from .forms import MasterCreateFormMixin
+from .base_forms import UnitFormWidgetMixin
+from .crud_forms import UnitMasterFormWorkMixin
 
 
 class BaseViewFactory(View):
@@ -23,14 +23,14 @@ class BaseViewFactory(View):
     detail_view_class = None
     delete_view_class = None
 
-    create_mixin = [CrudExtraConverter, UnitMasterParamsValidationMixin]
+    create_mixin = [UnitMasterParamsValidationMixin]
     update_mixin = []
     detail_mixin = []
     delete_mixin = []
 
     view_internal_mixin = []
-    create_master_form_internal_mixin = [MasterCreateFormMixin]
-    create_slave_form_internal_mixin = []
+    create_master_form_internal_mixin = [UnitFormWidgetMixin, UnitMasterFormWorkMixin]
+    create_slave_form_internal_mixin = [UnitFormWidgetMixin]
 
     create_redirect_url = None
 
@@ -43,17 +43,8 @@ class BaseViewFactory(View):
     title = None
 
     section = None
-    autocomplete = None
-    validators = None
+    meta = None
     template_name = None
-
-    create_develop_extra = None
-    update_develop_extra = None
-    delete_develop_extra = None
-
-    create_unit_extra = None
-    update_unit_extra = None
-    delete_unit_extra = None
 
     @classonlymethod
     def as_view(cls, load_action, **initkwargs):
@@ -78,9 +69,7 @@ class BaseViewFactory(View):
             form_siblings = []
             form_siblings.extend(form_internal_mixin)
             form_siblings.extend([cls.master_form_class])
-            form_namespace = {
-                'develop_extra': cls.create_develop_extra,
-            }
+            form_namespace = {}
             return type('MasterFormClass', tuple(form_siblings), form_namespace)
 
         def slave_form_s_create(action):
@@ -91,9 +80,7 @@ class BaseViewFactory(View):
                 form_siblings = []
                 form_siblings.extend(slave_form_internal_mixin)
                 form_siblings.extend([form_class])
-                form_namespace = {
-                    # 'base_buttons': cls.button_map[action],
-                }
+                form_namespace = {}
                 slave_form_s.append(type('SlaveFormClass', tuple(form_siblings), form_namespace))
             return slave_form_s
 
@@ -107,12 +94,11 @@ class BaseViewFactory(View):
                 'template_name': cls.template_name,
                 'success_url': cls.success_url,
                 'model': cls.model,
-                'develop_extra': getattr(cls, '{}_develop_extra'.format(action)),
-                'unit_extra': getattr(cls, '{}_unit_extra'.format(action)),
                 'redirect_url': getattr(cls, '{}_redirect_url'.format(action)),
                 # 'fields': cls.fields,
                 # 'title': cls.title,
                 'action': action,
+                'meta': cls.meta
                 # 'section': cls.section,
                 # 'autocomplete': cls.autocomplete,
                 # 'validators': cls.validators,

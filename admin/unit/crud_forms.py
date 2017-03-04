@@ -4,10 +4,14 @@
 import itertools
 
 
-class MasterCreateFormMixin(object):
+class UnitMasterFormWorkMixin(object):
 
     def save(self):
-        master_obj = super(MasterCreateFormMixin, self).save(commit=False)
+        """
+        Save Mixin
+        :return:
+        """
+        master_obj = super(UnitMasterFormWorkMixin, self).save(commit=False)
 
         brackets = [i for i in self.develop_extra['brackets']]
         for br in brackets:
