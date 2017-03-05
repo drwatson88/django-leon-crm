@@ -2,13 +2,13 @@
 
 
 import json
-import itertools
-from .list_extra import ListExtraConverter, list_unit_extra
+import pymorphy2
 
 from django.db.models import Q
 from django.core.paginator import Paginator
 
 from leon.base import BaseView, BaseParamsValidatorMixin
+from admin.unit.base_forms import UnitFilterWidgetMixin
 
 
 class UnitListParamsValidationMixin(BaseParamsValidatorMixin):
@@ -37,7 +37,7 @@ class UnitListParamsValidationMixin(BaseParamsValidatorMixin):
         return value if value else default
 
 
-class UnitListView(BaseView, ListExtraConverter, UnitListParamsValidationMixin):
+class UnitListView(BaseView, UnitListParamsValidationMixin):
     """
     Class for Unit List View
     (use in parent factory class)
@@ -57,15 +57,32 @@ class UnitListView(BaseView, ListExtraConverter, UnitListParamsValidationMixin):
     template_name = None
     per_page_count = None
 
+    HEADER = None
     MODEL = None
     FIELDS = []
 
-    filter_form_class = None
+    filter_main_class = None
+    filter_mixin_class = UnitFilterWidgetMixin
     redirect_url = None
-    list_develop_extra = None
-    list_unit_extra = list_unit_extra
 
     PAGE_STEP = None
+
+    first_table_col_header = '<i class="fa fa-pencil-square-o" aria-hidden="true"></i>'
+    last_table_col_header = '<i class="fa fa-times" aria-hidden="true"></i>'
+
+    first_table_col_pattern = \
+        '<a style="color: gray" href="{href}"><i class="fa fa-pencil-square-o" ' \
+        'aria-hidden="true"></i></a>'
+    last_table_col_pattern = \
+        '<a style="color: gray" href="{href}"><i class="fa fa-times" ' \
+        'aria-hidden="true"></i></a>'
+
+    first_item_link_pattern = ''
+    last_item_link_pattern = ''
+
+    buttons_pack = None
+
+    meta = None
 
     def __init__(self, **kwargs):
         """
@@ -75,40 +92,26 @@ class UnitListView(BaseView, ListExtraConverter, UnitListParamsValidationMixin):
         self.output_context = {
             'filter': None,
             'table': None,
-            'page_s': None
+            'page_s': None,
+            'unit_buttons_pack': None
         }
         super(UnitListView, self).__init__(**kwargs)
         self.table = {}
         self.extra = {}
 
-    def _filter_header(self):
-        pass
+    def _create_buttons_pack(self):
+        self.unit_buttons_pack = self.buttons_pack
+
+    def _create_filter_class(self):
+        self.filter_class = type('FilterClass',
+                                 tuple([self.filter_main_class,
+                                        self.filter_mixin_class]),
+                                 {})
 
     def _create_filter(self):
         self.filter_data = json.loads(self.params_storage['filter'])
-        self.filter = {
-            'filter': self.filter_form_class(self.filter_data) if self.filter_data
-            else self.filter_form_class(),
-            'header': self.list_unit_extra['filter']['header']
-        }
-
-    def _format_filter(self):
-        self.filter = self.FILTER_FORMAT_WIDGET().format(self.filter['filter'],
-                                                         self.filter['header'],
-                                                         'filter_form',
-                                                         self.extra['filter']['groups'],
-                                                         self.extra['filter']['buttons'],
-                                                         self.extra['subtype'],
-                                                         None)
-
-    def _format_page_list(self):
-        self.page_start = (self.page_no // self.PAGE_STEP) * self.PAGE_STEP + 1
-        self.page_stop = min((self.page_no // self.PAGE_STEP + 1) * self.PAGE_STEP, self.page_count)
-        self.page_s = [
-            {
-                'id': k,
-                'active': (True if k == self.page_no else False)
-            } for k in range(self.page_start, self.page_stop + 1)]
+        self.filter = self.filter_class(self.filter_data) \
+            if self.filter_data else self.filter_class()
 
     def _create_qs_list(self):
         query = self.MODEL.objects
@@ -125,19 +128,33 @@ class UnitListView(BaseView, ListExtraConverter, UnitListParamsValidationMixin):
         self.page = pages.page(self.params_storage['page_no'])
         self.object_list = self.page.object_list
 
-    def _get_model_verbose_name(self, field):
+    def _get_model_field_verbose_name(self, field):
         return self.MODEL._meta._forward_fields_map[field]._verbose_name
 
+    def _get_model_verbose_name(self):
+        return self.MODEL._meta.verbose_name
+
     def _format_qs_list_header(self):
-        self.table['header_s'] = [self._get_model_verbose_name(field) for field in self.FIELDS]
+        morph = pymorphy2.MorphAnalyzer()
+        morph_obj = morph.parse(self._get_model_verbose_name().lower())[0]
+        self.table['header'] = self.HEADER.format(morph_obj.inflect({'plur',
+                                                                     'gent'}).word)
 
     def _format_qs_list(self):
+        self.table['header_s'] = [self.first_table_col_header] + \
+                                 [self._get_model_field_verbose_name(field)
+                                  for field in self.FIELDS] + \
+                                 [self.last_table_col_header]
+
         object_list = self.object_list
         self.table['row_s'] = []
         for obj in object_list:
-            row = []
+            row = [self.first_table_col_pattern.format(
+                href=self.first_item_link_pattern.format(getattr(obj, 'id')))]
             for field in self.FIELDS:
                 row.append(getattr(obj, field))
+            row.append(self.last_table_col_pattern.format(
+                href=self.last_item_link_pattern.format(getattr(obj, 'id'))))
             self.table['row_s'].append(row)
 
     def _create_page_list(self):
@@ -162,16 +179,28 @@ class UnitListView(BaseView, ListExtraConverter, UnitListParamsValidationMixin):
         if self.page_count < self.page_no or 0 >= self.page_no:
             self.page_no = 1
 
+        self.page_start = (self.page_no // self.PAGE_STEP) * self.PAGE_STEP + 1
+        self.page_stop = min((self.page_no // self.PAGE_STEP + 1) * self.PAGE_STEP, self.page_count)
+        self.page_s = [
+            {
+                'id': k,
+                'active': (True if k == self.page_no else False)
+            } for k in range(self.page_start, self.page_stop + 1)
+        ]
+
+    def _create_meta(self):
+        self.unit_meta = json.dumps(self.meta)
+
     def get(self, *args, **kwargs):
+        self._create_filter_class()
         self._create_filter()
+        self._create_buttons_pack()
         self._create_qs_list()
         self._create_page_list()
+        self._create_meta()
 
-        self._convert_extra()
-
-        self._format_filter()
-        self._format_page_list()
         self._format_qs_list_header()
         self._format_qs_list()
+
         self._aggregate()
         return self._render()
