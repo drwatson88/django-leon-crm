@@ -30,9 +30,9 @@ class UnitMasterParamsValidationMixin(BaseParamsValidatorMixin):
         return value
 
 
-class UnitMasterCreateView(BaseView):
+class UnitMasterCRUDView(BaseView):
     """
-    Class for Unit Create View
+    Class for Unit CRUD View
     (use in parent factory class)
     """
 
@@ -61,7 +61,7 @@ class UnitMasterCreateView(BaseView):
             'unit_slave_form_s': None,
             'unit_meta': None
         }
-        super(UnitMasterCreateView, self).__init__(**kwargs)
+        super(UnitMasterCRUDView, self).__init__(**kwargs)
         self.extra = {}
 
     def _create_master_form(self, get=True):
@@ -91,6 +91,39 @@ class UnitMasterCreateView(BaseView):
         if self.unit_master_form.is_valid():
             self.unit_master_form.save()
             return True
+
+
+class UnitMasterCreateView(UnitMasterCRUDView):
+    """
+    Class for Unit Create View
+    (use in parent factory class)
+    """
+
+    def get(self, *args, **kwargs):
+        self._create_breadcrumb()
+        self._create_master_form()
+        self._create_slave_form_s()
+        self._create_meta()
+
+        self._aggregate()
+        return self._render()
+
+    def post(self, *args, **kwargs):
+        self._create_breadcrumb()
+        self._create_master_form(get=False)
+        if self._validate_master_form():
+            return self._redirect()
+        self._create_slave_form_s()
+        self._create_meta()
+        self._aggregate()
+        return self._render_content()
+
+
+class UnitMasterUpdateView(UnitMasterCRUDView):
+    """
+    Class for Unit Update View
+    (use in parent factory class)
+    """
 
     def get(self, *args, **kwargs):
         self._create_breadcrumb()
