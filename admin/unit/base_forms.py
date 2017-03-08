@@ -50,6 +50,11 @@ class UnitFormWidgetMixin(object):
         """
         return self[field].field.label
 
+    def _get_field_value(self, field):
+        """
+        """
+        return self[field].initial or ''
+
     def _get_field_attr(self, field):
         """
         """
@@ -91,8 +96,10 @@ class UnitFormWidgetMixin(object):
         return {
             'name': field,
             'label': self._get_field_label(field),
+            'value': self._get_field_value(field),
             'css_class': '{}'.format(field),
-            'attributes': self._get_field_attr(field)}
+            'attributes': self._get_field_attr(field)
+        }
 
     def _get_group_items(self, group):
         """
@@ -206,6 +213,11 @@ class UnitFilterWidgetMixin(object):
         """
         return self[field].field.label
 
+    def _get_field_value(self, field):
+        """
+        """
+        return self[field].initial or ''
+
     def _get_field_attr(self, field):
         """
         """
@@ -247,8 +259,10 @@ class UnitFilterWidgetMixin(object):
         return {
             'name': field,
             'label': self._get_field_label(field),
+            'value': self._get_field_value(field),
             'css_class': '{}'.format(field),
-            'attributes': self._get_field_attr(field)}
+            'attributes': self._get_field_attr(field)
+        }
 
     def _get_group_items(self, group):
         """

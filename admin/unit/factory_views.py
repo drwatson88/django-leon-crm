@@ -6,7 +6,8 @@ from functools import update_wrapper
 from django.utils.decorators import classonlymethod
 from django.views.generic import View
 
-from .crud_views import UnitMasterCreateView, UnitMasterParamsValidationMixin
+from .crud_views import UnitMasterCreateView, UnitMasterUpdateView, \
+    UnitMasterParamsValidationMixin
 from .base_forms import UnitFormWidgetMixin
 from .crud_forms import UnitMasterFormWorkMixin
 
@@ -19,12 +20,12 @@ class BaseViewFactory(View):
     """
 
     create_view_class = UnitMasterCreateView
-    update_view_class = None
+    update_view_class = UnitMasterUpdateView
     detail_view_class = None
     delete_view_class = None
 
     create_mixin = [UnitMasterParamsValidationMixin]
-    update_mixin = []
+    update_mixin = [UnitMasterParamsValidationMixin]
     detail_mixin = []
     delete_mixin = []
 
@@ -32,7 +33,11 @@ class BaseViewFactory(View):
     create_master_form_internal_mixin = [UnitFormWidgetMixin, UnitMasterFormWorkMixin]
     create_slave_form_internal_mixin = [UnitFormWidgetMixin]
 
+    update_master_form_internal_mixin = [UnitFormWidgetMixin, UnitMasterFormWorkMixin]
+    update_slave_form_internal_mixin = [UnitFormWidgetMixin]
+
     create_redirect_url = None
+    update_redirect_url = None
 
     action = None
     model = None
@@ -45,6 +50,8 @@ class BaseViewFactory(View):
     section = None
     meta = None
     template_name = None
+
+    breadcrumb = None
 
     @classonlymethod
     def as_view(cls, load_action, **initkwargs):
@@ -98,7 +105,8 @@ class BaseViewFactory(View):
                 # 'fields': cls.fields,
                 # 'title': cls.title,
                 'action': action,
-                'meta': cls.meta
+                'meta': cls.meta,
+                'breadcrumb': cls.breadcrumb,
                 # 'section': cls.section,
                 # 'autocomplete': cls.autocomplete,
                 # 'validators': cls.validators,
