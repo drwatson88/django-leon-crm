@@ -53,7 +53,12 @@ class UnitFormWidgetMixin(object):
     def _get_field_value(self, field):
         """
         """
-        return self[field].initial or ''
+        return self[field].initial or self[field].data or ''
+
+    def _get_field_errors(self, field):
+        """
+        """
+        return self[field].errors or []
 
     def _get_field_attr(self, field):
         """
@@ -67,6 +72,12 @@ class UnitFormWidgetMixin(object):
             return 'text'
         if isinstance(self[field].field.widget, widgets.Select):
             return 'select'
+        if isinstance(self[field].field.widget, widgets.Textarea):
+            return 'textarea'
+        if isinstance(self[field].field.widget, widgets.ClearableFileInput):
+            return 'file'
+        if isinstance(self[field].field.widget, widgets.CheckboxInput):
+            return 'checkbox'
 
     def _get_input_select_items(self, field):
         for name, value in self[field].field.widget.choices:
@@ -90,6 +101,31 @@ class UnitFormWidgetMixin(object):
         }
 
     def _input_text(self, field):
+        """
+        :return:
+        """
+        return {
+            'name': field,
+            'label': self._get_field_label(field),
+            'value': self._get_field_value(field),
+            'css_class': '{}'.format(field),
+            'attributes': self._get_field_attr(field),
+            'errors': self._get_field_errors(field)
+        }
+
+    def _input_textarea(self, field):
+        """
+        :return:
+        """
+        return {
+            'name': field,
+            'label': self._get_field_label(field),
+            'value': self._get_field_value(field),
+            'css_class': '{}'.format(field),
+            'attributes': self._get_field_attr(field)
+        }
+
+    def _input_checkbox(self, field):
         """
         :return:
         """
@@ -166,7 +202,7 @@ class UnitFormWidgetMixin(object):
         :return:
         """
 
-        return
+        return self.Options.message
 
 
 class UnitFilterWidgetMixin(object):

@@ -81,7 +81,7 @@ class UnitListView(BaseView, UnitListParamsValidationMixin):
     last_item_link_pattern = ''
 
     buttons_pack = None
-
+    breadcrumb = None
     meta = None
 
     def __init__(self, **kwargs):
@@ -93,7 +93,8 @@ class UnitListView(BaseView, UnitListParamsValidationMixin):
             'filter': None,
             'table': None,
             'page_s': None,
-            'unit_buttons_pack': None
+            'unit_buttons_pack': None,
+            'breadcrumb': None
         }
         super(UnitListView, self).__init__(**kwargs)
         self.table = {}
@@ -191,6 +192,9 @@ class UnitListView(BaseView, UnitListParamsValidationMixin):
     def _create_meta(self):
         self.unit_meta = json.dumps(self.meta)
 
+    def _create_breadcrumb(self):
+        self.breadcrumb = self.breadcrumb_page
+
     def get(self, *args, **kwargs):
         self._create_filter_class()
         self._create_filter()
@@ -198,6 +202,7 @@ class UnitListView(BaseView, UnitListParamsValidationMixin):
         self._create_qs_list()
         self._create_page_list()
         self._create_meta()
+        self._create_breadcrumb()
 
         self._format_qs_list_header()
         self._format_qs_list()

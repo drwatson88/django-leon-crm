@@ -53,7 +53,7 @@ class UnitMasterCRUDView(BaseView):
     slave_form_class_s = None
     redirect_url = None
     meta = None
-    breadcrumb = None
+    breadcrumb_page = None
 
     def __init__(self, **kwargs):
         """
@@ -69,7 +69,9 @@ class UnitMasterCRUDView(BaseView):
         }
         super(UnitMasterCRUDView, self).__init__(**kwargs)
         self.extra = {}
-        self.breadcrumb_page = {}
+
+    def _create_breadcrumb(self):
+        self.breadcrumb = self.breadcrumb_page
 
     def _create_master_form(self, get=True):
         self.unit_master_form = self.master_form_class() if get \
@@ -96,6 +98,9 @@ class UnitMasterCRUDView(BaseView):
             self.unit_master_form.save()
             return True
 
+    def _format(self):
+        pass
+
 
 class UnitMasterCreateView(UnitMasterCRUDView):
     """
@@ -107,6 +112,9 @@ class UnitMasterCreateView(UnitMasterCRUDView):
         self._create_master_form()
         self._create_slave_form_s()
         self._create_meta()
+        self._create_breadcrumb()
+
+        self._format()
 
         self._aggregate()
         return self._render()
@@ -117,6 +125,10 @@ class UnitMasterCreateView(UnitMasterCRUDView):
             return self._redirect()
         self._create_slave_form_s()
         self._create_meta()
+        self._create_breadcrumb()
+
+        self._format()
+
         self._aggregate()
         return self._render_content()
 
@@ -191,6 +203,9 @@ class UnitMasterUpdateView(UnitMasterCRUDView):
         self._create_master_form()
         self._create_slave_form_s()
         self._create_meta()
+        self._create_breadcrumb()
+
+        self._format()
 
         self._aggregate()
         return self._render()
@@ -201,5 +216,9 @@ class UnitMasterUpdateView(UnitMasterCRUDView):
             return self._redirect()
         self._create_slave_form_s()
         self._create_meta()
+        self._create_breadcrumb()
+
+        self._format()
+
         self._aggregate()
         return self._render_content()

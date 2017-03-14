@@ -19,6 +19,9 @@ class BaseViewFactory(View):
         controller.
     """
 
+    kwargs_params_slots = None
+    request_params_slots = None
+
     create_view_class = UnitMasterCreateView
     update_view_class = UnitMasterUpdateView
     detail_view_class = None
@@ -51,7 +54,7 @@ class BaseViewFactory(View):
     meta = None
     template_name = None
 
-    breadcrumb = None
+    breadcrumb_page = None
 
     @classonlymethod
     def as_view(cls, load_action, **initkwargs):
@@ -106,15 +109,19 @@ class BaseViewFactory(View):
                 # 'title': cls.title,
                 'action': action,
                 'meta': cls.meta,
-                'breadcrumb': cls.breadcrumb,
+                'breadcrumb_page': cls.breadcrumb_page,
                 # 'section': cls.section,
                 # 'autocomplete': cls.autocomplete,
                 # 'validators': cls.validators,
             }
+            if cls.kwargs_params_slots:
+                view_namespace.update({'kwargs_params_slots': cls.kwargs_params_slots})
+            if cls.request_params_slots:
+                view_namespace.update({'request_params_slots': cls.request_params_slots})
             view_siblings = []
             view_siblings.extend(view_internal_mixin)
-            view_siblings.extend([view_parent])
             view_siblings.extend(view_mixin)
+            view_siblings.extend([view_parent])
             return type('UnitView', tuple(view_siblings), view_namespace).as_view()
 
         def router(action):
