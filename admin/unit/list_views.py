@@ -8,7 +8,7 @@ from django.db.models import Q
 from django.core.paginator import Paginator
 
 from leon.base import BaseView, BaseParamsValidatorMixin
-from admin.unit.base_forms import UnitFilterWidgetMixin
+from admin.base.widgets.interfaces import FilterWidgetInterface
 
 
 class UnitListParamsValidationMixin(BaseParamsValidatorMixin):
@@ -62,7 +62,7 @@ class UnitListView(BaseView, UnitListParamsValidationMixin):
     FIELDS = []
 
     filter_main_class = None
-    filter_mixin_class = UnitFilterWidgetMixin
+    filter_mixin_class = FilterWidgetInterface
     redirect_url = None
 
     PAGE_STEP = None

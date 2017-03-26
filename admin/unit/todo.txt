@@ -1,0 +1,30 @@
+CRUD
+1. Общий заголовок +
+2. Добавление объекта
+3. Messages
+4. Breadcrumbs +
+5. FileWidget
+6. M2M Field
+7. UpdateView +
+8. DeleteView
+9. добавление m2m
+10. Master Form с Content Type
+
+
+LIST
+1. Breadcrumbs +
+2. FilterMixin
+3. JSController
+4. JSAutocomplete
+5. Headers +
+6. Колонка CRUD +
+7. Хорошая пагинация
+8. queryset выделить в метод
+9. Button Pack +-
+
+
+ДОКУМЕНТЫ:
+1. Создать контроллер создания по шаблону
+
+АВТОРИЗАЦИЯ
+1. Простая авторизация

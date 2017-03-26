@@ -6,9 +6,10 @@ from functools import update_wrapper
 from django.utils.decorators import classonlymethod
 from django.views.generic import View
 
+from admin.base.widgets.mixins import UnitMasterFormMixin, UnitSlaveFormMixin
 from .crud_views import UnitMasterCreateView, UnitMasterUpdateView, \
     UnitMasterParamsValidationMixin
-from .base_forms import UnitFormWidgetMixin
+from admin.base.widgets.interfaces import FormWidgetInterface, FilterWidgetInterface
 from .crud_forms import UnitMasterFormWorkMixin
 
 
@@ -27,17 +28,17 @@ class BaseViewFactory(View):
     detail_view_class = None
     delete_view_class = None
 
-    create_mixin = [UnitMasterParamsValidationMixin]
+    create_mixin = [UnitMasterParamsValidationMixin, UnitMasterFormMixin, UnitSlaveFormMixin]
     update_mixin = [UnitMasterParamsValidationMixin]
     detail_mixin = []
     delete_mixin = []
 
     view_internal_mixin = []
-    create_master_form_internal_mixin = [UnitFormWidgetMixin, UnitMasterFormWorkMixin]
-    create_slave_form_internal_mixin = [UnitFormWidgetMixin]
+    create_master_form_internal_mixin = [FormWidgetInterface, UnitMasterFormWorkMixin]
+    create_slave_form_internal_mixin = [FormWidgetInterface]
 
-    update_master_form_internal_mixin = [UnitFormWidgetMixin, UnitMasterFormWorkMixin]
-    update_slave_form_internal_mixin = [UnitFormWidgetMixin]
+    update_master_form_internal_mixin = [FormWidgetInterface, UnitMasterFormWorkMixin]
+    update_slave_form_internal_mixin = [FormWidgetInterface]
 
     create_redirect_url = None
     update_redirect_url = None

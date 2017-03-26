@@ -49,8 +49,6 @@ class UnitMasterCRUDView(BaseView):
 
     template_name = None
     model = None
-    master_form_class = None
-    slave_form_class_s = None
     redirect_url = None
     meta = None
     breadcrumb_page = None
@@ -69,17 +67,6 @@ class UnitMasterCRUDView(BaseView):
         }
         super(UnitMasterCRUDView, self).__init__(**kwargs)
         self.extra = {}
-
-    def _create_breadcrumb(self):
-        self.breadcrumb = self.breadcrumb_page
-
-    def _create_master_form(self, get=True):
-        self.unit_master_form = self.master_form_class() if get \
-            else self.master_form_class(json.loads(self.params_storage['data']))
-
-    def _create_slave_form_s(self):
-        self.unit_slave_form_s = [slave_form_class()
-                                  for slave_form_class in self.slave_form_class_s]
 
     def _create_meta(self):
         self.unit_meta = json.dumps(self.meta)
