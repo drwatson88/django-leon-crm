@@ -2,13 +2,11 @@
 
 
 import json
-import pymorphy2
-
-from django.db.models import Q
-from django.core.paginator import Paginator
-
+from digg_paginator import DiggPaginator
 from leon.base import BaseView, BaseParamsValidatorMixin
-from admin.base.widgets.interfaces import FilterWidgetInterface
+
+
+PAGE_SIZE = 20
 
 
 class UnitListParamsValidationMixin(BaseParamsValidatorMixin):
@@ -38,174 +36,105 @@ class UnitListParamsValidationMixin(BaseParamsValidatorMixin):
 
 
 class UnitListView(BaseView, UnitListParamsValidationMixin):
+
+    """ Unit List View. Receives get params
+        and response neither arguments in get
+        request params.
+
+        GET Params:
+
+        1. AJAX - if ajax is True, we have response
+        html part, that insert in DOM structure in client
+        side. If we have True, we response all html
+        document with base template.
+        2. GRID - grid or list
+        3. GRID_CNT - count columns in grid
+        4. ORDER - sort order
+        5. PAGE_NO - page number
+        6. PAGE_SIZE - size of page (count = rows*columns)
+
+        ALL PARAMS put in params_storage after validate
     """
-    Class for Unit List View
-    (use in parent factory class)
-    """
+
+    UNIT_MODEL = None
+    FILTER_MODEL = None
+
+    page_size = PAGE_SIZE
+    context_processors = []
 
     kwargs_params_slots = {
     }
 
     request_params_slots = {
-        'filter': [None, '[]'],
-        'page_no': [None, 1],
-        'page_size': [None, 10],
-        'page_start': [None, 1],
-        'page_stop': [None, 10]
+        'page': [None, 1],
     }
 
-    template_name = None
-    per_page_count = None
-
-    HEADER = None
-    MODEL = None
-    FIELDS = []
-
-    filter_main_class = None
-    filter_mixin_class = FilterWidgetInterface
-    redirect_url = None
-
-    PAGE_STEP = None
-
-    first_table_col_header = '<i class="fa fa-pencil-square-o" aria-hidden="true"></i>'
-    last_table_col_header = '<i class="fa fa-times" aria-hidden="true"></i>'
-
-    first_table_col_pattern = \
-        '<a style="color: gray" href="{href}"><i class="fa fa-pencil-square-o" ' \
-        'aria-hidden="true"></i></a>'
-    last_table_col_pattern = \
-        '<a style="color: gray" href="{href}"><i class="fa fa-times" ' \
-        'aria-hidden="true"></i></a>'
-
-    first_item_link_pattern = ''
-    last_item_link_pattern = ''
-
-    buttons_pack = None
-    breadcrumb = None
-    meta = None
-
-    def __init__(self, **kwargs):
-        """
-        :param kwargs:
-        """
+    def __init__(self, *args, **kwargs):
         self.params_storage = {}
         self.output_context = {
-            'filter': None,
-            'table': None,
-            'page_s': None,
-            'unit_buttons_pack': None,
-            'breadcrumb': None
+            'page': None,
         }
-        super(UnitListView, self).__init__(**kwargs)
-        self.table = {}
-        self.extra = {}
+        super(UnitListView, self).__init__(*args, **kwargs)
 
-    def _create_buttons_pack(self):
-        self.unit_buttons_pack = self.buttons_pack
+    def _unit_query(self):
+        self.unit_set = self.UNIT_MODEL.objects.all()
 
-    def _create_filter_class(self):
-        self.filter_class = type('FilterClass',
-                                 tuple([self.filter_main_class,
-                                        self.filter_mixin_class]),
-                                 {})
+    def _filter_s(self):
+        """
 
-    def _create_filter(self):
-        self.filter_data = json.loads(self.params_storage['filter'])
-        self.filter = self.filter_class(self.filter_data) \
-            if self.filter_data else self.filter_class()
+        :return:
+        """
 
-    def _create_qs_list(self):
-        query = self.MODEL.objects
+        self.filter_set = self.FILTER_MODEL.all().order_by('position')
+        self.filter_set = self.filter_set.order_by('position')
 
-        q_chain = [Q(**{'{}__icontains'.format(field): value})
-                   for field, value in (self.filter_data or {}) if value]
-        q = q_chain.pop() if q_chain else None
-        for item in q_chain:
-            q &= item
+        for filter_obj in self.filter_set:
+            if filter_obj.type in ['M2M', 'FK']:
+                json_value = json.loads(filter_obj.value)
+                filter_value = self.params_storage.get(filter_obj.name) or \
+                               (json_value['filter'] and self.params_storage[json_value['filter']])
 
-        query = query.filter(q) if q else query
-        self.qs = query.all()
-        pages = Paginator(self.qs, self.per_page_count)
-        self.page = pages.page(self.params_storage['page_no'])
-        self.object_list = self.page.object_list
+                if filter_value:
+                    self.product_set = self.product_set.\
+                        filter(**{'{abbr}__value'.format(abbr=filter_obj.name): filter_value})
 
-    def _get_model_field_verbose_name(self, field):
-        return self.MODEL._meta._forward_fields_map[field]._verbose_name
+            if filter_obj.type == 'KV':
+                json_value = json.loads(filter_obj.value)
+                filter_value = self.params_storage.get(filter_obj.name) or \
+                               (json_value['filter'] and self.params_storage[json_value['filter']])
 
-    def _get_model_verbose_name(self):
-        return self.MODEL._meta.verbose_name
+                if filter_value:
+                    product_id_s = self.product_set.values_list('id', flat=True)
+                    product_kv_id_s = self.CATALOG_PRODUCT_PARAMS_KV_MODEL.objects. \
+                        filter(**{'{rel}__in'.format(rel=json_value['related_query']): product_id_s}). \
+                        filter(abbr=filter_obj.name).\
+                        filter(value=filter_value).\
+                        values('{rel}__pk'.format(rel=json_value['related_query']), flat=True)
+                    self.product_set = self.product_set.filter(pk__in=product_kv_id_s)
 
-    def _format_qs_list_header(self):
-        morph = pymorphy2.MorphAnalyzer()
-        morph_obj = morph.parse(self._get_model_verbose_name().lower())[0]
-        self.table['header'] = self.HEADER.format(morph_obj.inflect({'plur',
-                                                                     'gent'}).word)
+    def _set_order_s(self):
+        order = self.params_storage['order']
+        self.order_s = self.ORDER_REFERENCE_MODEL.objects.order_by('-position').all()
+        for order_obj in self.order_s:
+            order_obj.selected = False
+            if order_obj.name == order:
+                order_obj.selected = True
+        order_selected = self.ORDER_REFERENCE_MODEL.objects.get(name=order)
+        self.order_name = order_selected.field_name \
+            if order_selected.field_order else '-{}'.format(order_selected.field_name)
 
-    def _format_qs_list(self):
-        self.table['header_s'] = [self.first_table_col_header] + \
-                                 [self._get_model_field_verbose_name(field)
-                                  for field in self.FIELDS] + \
-                                 [self.last_table_col_header]
+    def _unit_obj_s_query(self):
+        self.unit_obj_s_query = self.UNIT_MODEL.objects.all()
 
-        object_list = self.object_list
-        self.table['row_s'] = []
-        for obj in object_list:
-            row = [self.first_table_col_pattern.format(
-                href=self.first_item_link_pattern.format(getattr(obj, 'id')))]
-            for field in self.FIELDS:
-                row.append(getattr(obj, field))
-            row.append(self.last_table_col_pattern.format(
-                href=self.last_item_link_pattern.format(getattr(obj, 'id'))))
-            self.table['row_s'].append(row)
-
-    def _create_page_list(self):
-
-        in_page_no = self.params_storage['page_no']
-        in_page_size = self.params_storage['page_size']
-        in_page_start = self.params_storage['page_start']
-        in_page_stop = self.params_storage['page_stop']
-
-        product_obj_s_count = len(self.qs)
-
-        self.page_count = product_obj_s_count//in_page_size + \
-                          (product_obj_s_count % in_page_size > 0)
-
-        if in_page_no == 'next':
-            self.page_no = int(in_page_stop) + 1
-        elif in_page_no == 'prev':
-            self.page_no = int(in_page_start) - 1
-        else:
-            self.page_no = int(in_page_no)
-
-        if self.page_count < self.page_no or 0 >= self.page_no:
-            self.page_no = 1
-
-        self.page_start = (self.page_no // self.PAGE_STEP) * self.PAGE_STEP + 1
-        self.page_stop = min((self.page_no // self.PAGE_STEP + 1) * self.PAGE_STEP, self.page_count)
-        self.page_s = [
-            {
-                'id': k,
-                'active': (True if k == self.page_no else False)
-            } for k in range(self.page_start, self.page_stop + 1)
-        ]
-
-    def _create_meta(self):
-        self.unit_meta = json.dumps(self.meta)
-
-    def _create_breadcrumb(self):
-        self.breadcrumb = self.breadcrumb_page
+    def _unit_s_query(self):
+        paginator = DiggPaginator(self.product_obj_s_query, self.page_size)
+        self.page = paginator.page(self.params_storage['page'] or 1)
 
     def get(self, *args, **kwargs):
-        self._create_filter_class()
-        self._create_filter()
-        self._create_buttons_pack()
-        self._create_qs_list()
-        self._create_page_list()
-        self._create_meta()
-        self._create_breadcrumb()
-
-        self._format_qs_list_header()
-        self._format_qs_list()
-
+        self._unit_query()
+        self._filter_s()
+        self._set_order_s()
+        self._unit_obj_s_query()
+        self._product_s_query()
         self._aggregate()
         return self._render()
