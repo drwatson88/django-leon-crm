@@ -15,23 +15,7 @@ class UnitListParamsValidationMixin(BaseParamsValidatorMixin):
     """
 
     @staticmethod
-    def _filter_validator(value, default):
-        return value if value else default
-
-    @staticmethod
-    def _page_no_validator(value, default):
-        return value if value else default
-
-    @staticmethod
-    def _page_start_validator(value, default):
-        return value if value else default
-
-    @staticmethod
-    def _page_stop_validator(value, default):
-        return value if value else default
-
-    @staticmethod
-    def _page_size_validator(value, default):
+    def _page_validator(value, default):
         return value if value else default
 
 
