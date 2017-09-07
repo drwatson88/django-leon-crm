@@ -46,8 +46,9 @@ class UnitCRUDView(BaseView):
     request_params_slots = {
     }
 
+    unit_form_class = None
     template_name = None
-    model = None
+    UNIT_MODEL = None
 
     def __init__(self, **kwargs):
         """
@@ -56,13 +57,16 @@ class UnitCRUDView(BaseView):
         """
         self.params_storage = {}
         self.output_context = {
-            'unit_master_form': None
+            'unit_form': None
         }
         super(UnitCRUDView, self).__init__(**kwargs)
 
+    def _create_form(self):
+        self.unit_form = self.unit_form_class(initial=self.params_storage)
+
     def _validate_form(self):
-        if self.unit_master_form.is_valid():
-            self.unit_master_form.save()
+        if self.unit_form.is_valid():
+            self.unit_form.save()
             return True
         return False
 
@@ -70,20 +74,17 @@ class UnitCRUDView(BaseView):
 class UnitCreateView(UnitCRUDView):
     """
     Class for Unit Create View
-    (use in parent factory class)
     """
 
     def get(self, *args, **kwargs):
         self._create_form()
-        self._format()
         self._aggregate()
         return self._render()
 
     def post(self, *args, **kwargs):
-        self._create_form(get=False)
-        if self._validate_master_form():
+        self._create_form()
+        if self._validate_form():
             return self._redirect()
-        self._format()
         self._aggregate()
         return self._render_content()
 
@@ -91,10 +92,43 @@ class UnitCreateView(UnitCRUDView):
 class UnitUpdateView(UnitCRUDView):
     """
     Class for Unit Update View
-    (use in parent factory class)
-
-    kwargs_params_slots = {
-        'unit': [None, 1]
-    }
     """
 
+    def get(self, *args, **kwargs):
+        self._create_form()
+        self._aggregate()
+        return self._render()
+
+    def post(self, *args, **kwargs):
+        self._create_form()
+        if self._validate_form():
+            return self._redirect()
+        self._aggregate()
+        return self._render_content()
+
+
+class UnitDeleteView(UnitCRUDView):
+    """
+    Class for Unit Delete View
+    """
+
+    kwargs_params_slots = {
+        'id': [None, 0]
+    }
+
+    def _delete_unit(self):
+        unit = self.UNIT_MODEL.filter(pk=self.params_storage['id']).first()
+        if unit:
+            unit.remove()
+
+    def get(self, *args, **kwargs):
+        self._delete_unit()
+        self._aggregate()
+        return self._render()
+
+    def post(self, *args, **kwargs):
+        self._create_form()
+        if self._validate_form():
+            return self._redirect()
+        self._aggregate()
+        return self._render_content()
